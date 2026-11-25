@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Manager POS</title>
+<style>
+:root{--bg:#f4f6f8;--panel:#fff;--ink:#17212b;--muted:#6b7785;--line:#e4e9ee;--brand:#1769aa;--brand2:#0f5288;--good:#138a58;--danger:#b42318;--radius:16px}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,Segoe UI,Arial,sans-serif}
+button,input,select{font:inherit}button{cursor:pointer;border:0;border-radius:11px;padding:11px 14px;font-weight:650}
+.app{max-width:1400px;margin:auto;padding:20px}.top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}.brand{font-size:22px;font-weight:850;letter-spacing:.2px}.brand small{display:block;color:var(--muted);font-size:12px;font-weight:500}
+.actions{display:flex;gap:8px;align-items:center}.btn{background:var(--brand);color:white}.btn:hover{background:var(--brand2)}.btn.secondary{background:#eaf1f7;color:#174e78}.btn.ghost{background:#f0f2f4;color:#334155}.btn:disabled{opacity:.5;cursor:not-allowed}
+.layout{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(330px,.85fr);gap:16px}.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px;box-shadow:0 3px 14px #17212b08}
+h2{font-size:17px;margin:0 0 13px}.field{display:flex;flex-direction:column;gap:6px}.field label{font-size:12px;color:var(--muted);font-weight:700}.field input,.field select,.search{border:1px solid var(--line);border-radius:10px;padding:11px 12px;background:white;color:var(--ink);min-width:0;width:100%}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}.scanrow{display:flex;gap:8px}.scanrow input{flex:1}.hint{font-size:12px;color:var(--muted);margin-top:7px}
+.product-results{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:9px;margin-top:12px}.product{border:1px solid var(--line);border-radius:12px;padding:12px;text-align:start;background:#fff;min-height:80px}.product:hover{border-color:var(--brand);background:#f7fbff}.product strong{display:block}.product span{font-size:12px;color:var(--muted)}
+.cart-head,.cart-row{display:grid;grid-template-columns:minmax(0,1fr) 72px 88px 30px;gap:8px;align-items:center}.cart-head{font-size:11px;color:var(--muted);font-weight:700;padding:0 0 8px;border-bottom:1px solid var(--line)}.cart-row{padding:11px 0;border-bottom:1px solid var(--line)}.cart-row strong{display:block;font-size:13px}.cart-row small{color:var(--muted)}.qty{width:68px;padding:7px;border:1px solid var(--line);border-radius:8px}.price{width:86px;padding:7px;border:1px solid var(--line);border-radius:8px;text-align:end}.remove{background:#fff0ef;color:var(--danger);padding:6px 8px}
+.totalbox{margin-top:16px;background:#f5f8fb;border-radius:13px;padding:14px}.total-line{display:flex;justify-content:space-between;margin:5px 0}.grand{font-size:24px;font-weight:850}.muted{color:var(--muted)}.payment{display:grid;gap:12px;margin-top:14px}.pay-options{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.pay-option{border:1px solid var(--line);border-radius:11px;padding:10px;background:white;text-align:center}.pay-option.active{border-color:var(--brand);background:#eef6fc;color:var(--brand)}
+.status{margin:12px 0;padding:10px 12px;border-radius:10px;background:#eef6fc;color:#174e78;font-size:13px}.status.error{background:#fff0ef;color:var(--danger)}.status.success{background:#eaf8f1;color:var(--good)}
+.empty{text-align:center;color:var(--muted);padding:28px 8px}.camera-wrap{display:none;margin-top:12px;background:#111;border-radius:12px;overflow:hidden}.camera-wrap video{width:100%;max-height:280px;object-fit:cover}.camera-controls{display:flex;gap:8px;padding:8px;background:#fff}
+.footer-note{font-size:11px;color:var(--muted);margin-top:14px}
+[dir=rtl] .top,[dir=rtl] .actions{flex-direction:row-reverse}[dir=rtl] .cart-head,[dir=rtl] .cart-row{text-align:right}
+@media(max-width:850px){.layout{grid-template-columns:1fr}.app{padding:12px}.top{align-items:flex-start}.cart-head,.cart-row{grid-template-columns:minmax(0,1fr) 58px 76px 28px}.qty{width:56px}.price{width:74px}}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <header class="top">
+    <div class="brand">MANAGER POS <small id="subtitle">Camera checkout · ILS</small></div>
+    <div class="actions">
+      <button class="btn ghost" id="langBtn">العربية</button>
+      <button class="btn secondary" id="refreshBtn">↻ <span data-i18n="refresh">Refresh data</span></button>
+    </div>
+  </header>
+
+  <div id="status" class="status">Demo mode: connect this extension to Manager.io to load your real inventory and customers.</div>
+
+  <main class="layout">
+    <section class="panel">
+      <h2 data-i18n="saleDetails">Sale details</h2>
+      <div class="grid2">
+        <div class="field"><label data-i18n="customer">Customer</label><select id="customer"><option value="">Walk-in / Cash customer</option></select></div>
+        <div class="field"><label data-i18n="date">Invoice date</label><input id="date" type="date"></div>
+      </div>
+      <div style="height:16px"></div>
+      <h2 data-i18n="scanProduct">Scan product barcode</h2>
+      <div class="scanrow">
+        <input id="barcode" class="search" autocomplete="off" placeholder="Enter barcode or product code">
+        <button class="btn" id="scanBtn" data-i18n="camera">Camera</button>
+        <button class="btn secondary" id="addCodeBtn" data-i18n="add">Add</button>
+      </div>
+      <div class="camera-wrap" id="cameraWrap">
+        <video id="video" playsinline></video>
+        <div class="camera-controls"><button class="btn" id="stopCamera" data-i18n="stopCamera">Stop camera</button><span class="hint" id="cameraHint"></span></div>
+      </div>
+      <p class="hint" data-i18n="scanHint">Point your phone camera at a barcode. If camera scanning is unavailable, type the barcode above.</p>
+      <div style="height:14px"></div>
+      <h2 data-i18n="findProduct">Find product</h2>
+      <input id="productSearch" class="search" placeholder="Search by product name or code">
+      <div id="products" class="product-results"></div>
+      <p class="footer-note" data-i18n="barcodeNote">Barcode matching uses the inventory item's code field. If your barcodes are stored in a custom field, we will map that field during setup.</p>
+    </section>
+
+    <section class="panel">
+      <h2 data-i18n="cart">Cart</h2>
+      <div class="cart-head"><span data-i18n="product">Product</span><span data-i18n="qty">Qty</span><span data-i18n="unitPrice">Price</span><span></span></div>
+      <div id="cart"><div class="empty" data-i18n="emptyCart">Scan or select a product to start.</div></div>
+      <div class="totalbox">
+        <div class="total-line"><span data-i18n="items">Items</span><strong id="itemCount">0</strong></div>
+        <div class="total-line grand"><span data-i18n="total">Total</span><span id="total">₪0.00</span></div>
+      </div>
+      <div class="payment">
+        <h2 data-i18n="payment">Payment</h2>
+        <div class="pay-options">
+          <button class="pay-option active" data-method="cash" data-i18n="cash">Cash</button>
+          <button class="pay-option" data-method="bank" data-i18n="bank">Bank</button>
+          <button class="pay-option" data-method="card" data-i18n="card">Card</button>
+          <button class="pay-option" data-method="later" data-i18n="payLater">Pay later</button>
+        </div>
+        <div class="field" id="accountField"><label data-i18n="depositAccount">Deposit account</label><select id="account"><option value="">Choose account after connecting</option></select></div>
+        <div class="field" id="amountField"><label data-i18n="amountReceived">Amount received (₪)</label><input id="amountReceived" type="number" min="0" step="0.01" value="0"></div>
+        <div class="total-line"><span data-i18n="remaining">Remaining balance</span><strong id="remaining">₪0.00</strong></div>
+        <button class="btn" id="checkoutBtn" disabled data-i18n="createInvoice">Create invoice</button>
+        <p class="footer-note" data-i18n="saveNote">Saving is disabled until the Manager API list endpoints and receipt enum/account mapping are verified for your business. This prevents accidental or malformed accounting entries.</p>
+      </div>
+    </section>
+  </main>
+</div>
+<script>
+const I18N={
+ en:{refresh:"Refresh data",saleDetails:"Sale details",customer:"Customer",date:"Invoice date",scanProduct:"Scan product barcode",camera:"Camera",add:"Add",stopCamera:"Stop camera",scanHint:"Point your phone camera at a barcode. If camera scanning is unavailable, type the barcode above.",findProduct:"Find product",barcodeNote:"Barcode matching uses the inventory item's code field. If your barcodes are stored in a custom field, we will map that field during setup.",cart:"Cart",product:"Product",qty:"Qty",unitPrice:"Price",emptyCart:"Scan or select a product to start.",items:"Items",total:"Total",payment:"Payment",cash:"Cash",bank:"Bank",card:"Card",payLater:"Pay later",depositAccount:"Deposit account",amountReceived:"Amount received (₪)",remaining:"Remaining balance",createInvoice:"Create invoice",saveNote:"Saving is disabled until the Manager API list endpoints and receipt enum/account mapping are verified for your business. This prevents accidental or malformed accounting entries."},
+ ar:{refresh:"تحديث البيانات",saleDetails:"تفاصيل البيع",customer:"الزبون",date:"تاريخ الفاتورة",scanProduct:"امسح باركود المنتج",camera:"الكاميرا",add:"إضافة",stopCamera:"إيقاف الكاميرا",scanHint:"وجّه كاميرا الهاتف نحو الباركود. إذا لم تعمل الكاميرا، أدخل الباركود يدوياً.",findProduct:"البحث عن منتج",barcodeNote:"مطابقة الباركود تعتمد حالياً على حقل كود الصنف. إذا كانت الباركودات محفوظة في حقل مخصص فسنربطه أثناء الإعداد.",cart:"سلة المشتريات",product:"المنتج",qty:"الكمية",unitPrice:"السعر",emptyCart:"امسح باركود أو اختر منتجاً للبدء.",items:"عدد القطع",total:"الإجمالي",payment:"الدفع",cash:"نقداً",bank:"تحويل بنكي",card:"بطاقة",payLater:"آجل",depositAccount:"حساب الإيداع",amountReceived:"المبلغ المستلم (₪)",remaining:"المبلغ المتبقي",createInvoice:"إنشاء الفاتورة",saveNote:"حفظ الفواتير معطّل مؤقتاً حتى نتحقق من مسارات جلب البيانات وترميز الإيصال وربط الحسابات في حسابك. هذا يمنع تسجيل قيود محاسبية غير صحيحة."}
+};
+const state={lang:"en",products:[],customers:[],accounts:[],cart:[],method:"cash",stream:null,connected:false};
+const $=id=>document.getElementById(id);
+const money=n=>"₪"+Number(n||0).toFixed(2);
+function msg(text,type=""){const el=$("status");el.className="status "+type;el.textContent=text}
+function t(k){return I18N[state.lang][k]||k}
+function setLang(){document.documentElement.lang=state.lang;document.documentElement.dir=state.lang==="ar"?"rtl":"ltr";document.querySelectorAll("[data-i18n]").forEach(el=>el.textContent=t(el.dataset.i18n));$("langBtn").textContent=state.lang==="en"?"العربية":"English";render()}
+$("langBtn").onclick=()=>{state.lang=state.lang==="en"?"ar":"en";setLang()};
+function managerRequest(message,timeout=12000){return new Promise((resolve,reject)=>{const requestId=crypto.randomUUID();const timer=setTimeout(()=>{window.removeEventListener("message",handler);reject(new Error("Manager did not respond. Open this page inside Manager.io."))},timeout);function handler(event){if(event.data?.requestId===requestId&&event.data?.type?.endsWith("-response")){clearTimeout(timer);window.removeEventListener("message",handler);resolve(event.data.body)}}window.addEventListener("message",handler);window.parent.postMessage({...message,requestId},"*")})}
+async function api(method,path,body){return managerRequest({type:"api-request",method,path,body})}
+function normalizeList(data){if(Array.isArray(data))return data;if(Array.isArray(data?.items))return data.items;if(Array.isArray(data?.data))return data.data;return []}
+function productName(p){return p.name||p.description||p.uniqueName||"Unnamed item"}
+function productCode(p){return p.code||p.itemCode||p.barcode||""}
+function productPrice(p){return Number(p.salesUnitPrice??p.salesPrice??p.price??0)}
+async function refreshData(){
+ try{
+  msg("Connecting to Manager.io…");
+  // These collection paths must be confirmed against the API version enabled on this Cloud business.
+  const [items,customers,accounts]=await Promise.all([
+   api("GET","/api4/inventory-items"),
+   api("GET","/api4/customers"),
+   api("GET","/api4/bank-or-cash-accounts")
+  ]);
+  state.products=normalizeList(items);state.customers=normalizeList(customers);state.accounts=normalizeList(accounts);
+  state.connected=true;render();msg("Connected. Loaded "+state.products.length+" products, "+state.customers.length+" customers and "+state.accounts.length+" accounts.","success");
+ }catch(e){state.connected=false;msg("Manager connection is not ready: "+e.message+" This starter UI remains in preview mode.","error")}
+}
+function render(){
+ const cust=$("customer"),old=cust.value;cust.innerHTML=`<option value="">${state.lang==="ar"?"زبون نقدي / بدون تحديد":"Walk-in / Cash customer"}</option>`+state.customers.map(c=>`<option value="${c.key||c.id}">${escapeHtml(c.name||"Customer")}</option>`).join("");if(old)cust.value=old;
+ const acc=$("account"),oldA=acc.value;acc.innerHTML=`<option value="">${state.lang==="ar"?"اختر الحساب":"Select account"}</option>`+state.accounts.filter(a=>!a.inactive).map(a=>`<option value="${a.key||a.id}">${escapeHtml(a.name||"Account")}</option>`).join("");if(oldA)acc.value=oldA;
+ const q=$("productSearch").value.trim().toLowerCase();const matches=state.products.filter(p=>(productName(p)+" "+productCode(p)).toLowerCase().includes(q)).slice(0,40);
+ $("products").innerHTML=matches.length?matches.map(p=>`<button class="product" data-key="${p.key||p.id}"><strong>${escapeHtml(productName(p))}</strong><span>${escapeHtml(productCode(p))} · ${money(productPrice(p))}</span></button>`).join(""):`<div class="empty">${state.connected?(state.lang==="ar"?"لا توجد منتجات مطابقة":"No matching products"):(state.lang==="ar"?"سيظهر مخزونك بعد الربط":"Your inventory appears after connection")}</div>`;
+ document.querySelectorAll(".product").forEach(b=>b.onclick=()=>{const p=state.products.find(x=>(x.key||x.id)===b.dataset.key);if(p)addProduct(p)});
+ $("cart").innerHTML=state.cart.length?state.cart.map((x,i)=>`<div class="cart-row"><div><strong>${escapeHtml(productName(x))}</strong><small>${escapeHtml(productCode(x))}</small></div><input class="qty" type="number" min="0.01" step="0.01" value="${x.qty}" data-qty="${i}"><input class="price" type="number" min="0" step="0.01" value="${x.price}" data-price="${i}"><button class="remove" data-remove="${i}">×</button></div>`).join(""):`<div class="empty">${t("emptyCart")}</div>`;
+ document.querySelectorAll("[data-qty]").forEach(el=>el.onchange=()=>{state.cart[+el.dataset.qty].qty=Math.max(.01,+el.value||.01);render()});
+ document.querySelectorAll("[data-price]").forEach(el=>el.onchange=()=>{state.cart[+el.dataset.price].price=Math.max(0,+el.value||0);render()});
+ document.querySelectorAll("[data-remove]").forEach(el=>el.onclick=()=>{state.cart.splice(+el.dataset.remove,1);render()});
+ const total=cartTotal();$("itemCount").textContent=state.cart.reduce((s,x)=>s+x.qty,0);$("total").textContent=money(total);
+ const received=state.method==="later"?0:Math.min(total,Math.max(0,+$("amountReceived").value||0));$("remaining").textContent=money(total-received);
+ $("amountField").style.display=state.method==="later"?"none":"flex";$("accountField").style.display=state.method==="later"?"none":"flex";
+ $("checkoutBtn").disabled=true;
+}
+function cartTotal(){return state.cart.reduce((s,x)=>s+x.qty*x.price,0)}
+function addProduct(p){const key=p.key||p.id;const found=state.cart.find(x=>(x.key||x.id)===key);if(found)found.qty+=1;else state.cart.push({...p,qty:1,price:productPrice(p)});render()}
+function escapeHtml(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+$("productSearch").addEventListener("input",render);$("refreshBtn").onclick=refreshData;
+$("addCodeBtn").onclick=()=>lookupCode($("barcode").value.trim());
+$("barcode").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();lookupCode(e.target.value.trim())}});
+function lookupCode(code){if(!code)return;const p=state.products.find(x=>productCode(x)===code);if(p){addProduct(p);$("barcode").value="";msg("Added: "+productName(p),"success")}else msg("No matching product code found. Check the item's code/barcode field.","error")}
+document.querySelectorAll(".pay-option").forEach(b=>b.onclick=()=>{state.method=b.dataset.method;document.querySelectorAll(".pay-option").forEach(x=>x.classList.toggle("active",x===b));if(state.method==="later")$("amountReceived").value=0;else if(+$("amountReceived").value===0)$("amountReceived").value=cartTotal().toFixed(2);render()});
+$("amountReceived").oninput=render;
+$("date").value=new Date().toISOString().slice(0,10);
+$("scanBtn").onclick=startCamera;$("stopCamera").onclick=stopCamera;
+async function startCamera(){
+ if(!("BarcodeDetector" in window)){msg("This browser does not support the built-in BarcodeDetector. Use manual barcode entry or a supported scanning library.","error");return}
+ try{state.stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"}},audio:false});$("video").srcObject=state.stream;$("cameraWrap").style.display="block";await $("video").play();const detector=new BarcodeDetector({formats:["ean_13","ean_8","upc_a","upc_e","code_128","code_39","qr_code","itf"]});let busy=false;const scan=async()=>{if(!state.stream)return;if(!busy){busy=true;try{const codes=await detector.detect($("video"));if(codes.length){lookupCode(codes[0].rawValue);stopCamera();return}}catch(e){}busy=false}if(state.stream)requestAnimationFrame(scan)};requestAnimationFrame(scan)}catch(e){msg("Camera access failed. Allow camera permission and open the extension over HTTPS.","error")}
+}
+function stopCamera(){if(state.stream){state.stream.getTracks().forEach(t=>t.stop());state.stream=null}$("video").srcObject=null;$("cameraWrap").style.display="none"}
+$("checkoutBtn").onclick=()=>msg("Checkout is not enabled in this build. First verify the live Manager API data shapes and receipt account mapping; no accounting records have been created.","error");
+setLang();
+</script>
+</body>
+</html>
