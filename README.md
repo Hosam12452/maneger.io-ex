@@ -1,4 +1,4 @@
-# Manager.io POS Extension — Starter Build
+# Manager.io POS Extension 
 
 This is a first-stage, bilingual (Arabic/English) POS interface for Manager.io Cloud.
 
